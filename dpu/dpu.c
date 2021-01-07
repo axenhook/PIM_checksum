@@ -37,9 +37,9 @@
 #include "common.h"
 
 /* Use blocks of 256 bytes */
-#define BLOCK_SIZE (256)
+#define BLOCK_SIZE (8)
 
-__dma_aligned uint64_t DPU_CACHES[NR_TASKLETS][BLOCK_SIZE/8];
+__dma_aligned uint8_t DPU_CACHES[NR_TASKLETS][BLOCK_SIZE];
 __host dpu_results_t DPU_RESULTS[NR_TASKLETS];
 
 __mram_noinit uint8_t DPU_BUFFER[BUFFER_SIZE];
@@ -52,13 +52,14 @@ __mram_noinit uint8_t DPU_BUFFER[BUFFER_SIZE];
 int main()
 {
     uint32_t tasklet_id = me();
-    uint64_t *cache = DPU_CACHES[tasklet_id];
+    uint32_t *cache = (uint32_t *)DPU_CACHES[tasklet_id];
     dpu_results_t *result = &DPU_RESULTS[tasklet_id];
-    uint64_t checksum = 0;
+    uint32_t checksum = 0;
 
     /* Initialize once the cycle counter */
     if (tasklet_id == 0)
-        perfcounter_config(COUNT_CYCLES, true);
+        //perfcounter_config(COUNT_CYCLES, true);
+        perfcounter_config(COUNT_INSTRUCTIONS, true);
 
     for (uint32_t buffer_idx = tasklet_id * BLOCK_SIZE; buffer_idx < BUFFER_SIZE;
          buffer_idx += (NR_TASKLETS * BLOCK_SIZE)) {
@@ -67,7 +68,7 @@ int main()
         mram_read(&DPU_BUFFER[buffer_idx], cache, BLOCK_SIZE);
 
         /* computes the checksum of a cached block */
-        for (uint32_t cache_idx = 0; cache_idx < BLOCK_SIZE/8; cache_idx++) {
+        for (uint32_t cache_idx = 0; cache_idx < BLOCK_SIZE/4; cache_idx++) {
             checksum += cache[cache_idx];
         }
     }
