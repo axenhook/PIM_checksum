@@ -36,7 +36,7 @@
 #define ANSI_COLOR_GREEN "\x1b[32m"
 #define ANSI_COLOR_RESET "\x1b[0m"
 
-static uint8_t test_file[BUFFER_SIZE];
+static uint32_t test_file[BUFFER_SIZE/4];
 
 /**
  * @brief creates a "test file"
@@ -48,8 +48,8 @@ static uint32_t create_test_file()
     uint32_t checksum = 0;
     srand(0);
 
-    for (unsigned int i = 0; i < BUFFER_SIZE; i++) {
-        test_file[i] = (unsigned char)(rand());
+    for (uint32_t i = 0; i < BUFFER_SIZE/4; i++) {
+        test_file[i] = (uint32_t)(rand());
         checksum += test_file[i];
     }
 
@@ -74,6 +74,8 @@ int main()
     uint32_t dpu_cycles;
     bool status = true;
     unsigned long long ns;
+
+    DPU_ASSERT((BUFFER_SIZE % 4));
 
     ns = get_ns();
     DPU_ASSERT(dpu_alloc(NR_DPUS, NULL, &dpu_set));
@@ -103,10 +105,10 @@ int main()
         unsigned int each_dpu = 0;
         printf("Display DPU Logs\n");
         DPU_FOREACH (dpu_set, dpu) {
-    //        printf("DPU#%d:\n", each_dpu);
-      //      ns = get_ns();
-       //     DPU_ASSERT(dpulog_read_for_dpu(dpu.dpu, stdout));
-       //     printf("read log from dpu %d %d DPUs: %llu ns\n", each_dpu, nr_of_dpus, get_ns() - ns);
+            //printf("DPU#%d: \n", each_dpu);
+            ns = get_ns();
+            DPU_ASSERT(dpulog_read_for_dpu(dpu.dpu, stdout));
+            printf("read log from dpu %d %d DPUs: %llu ns\n", each_dpu, nr_of_dpus, get_ns() - ns);
             each_dpu++;
         }
     }
@@ -138,9 +140,9 @@ int main()
       //  printf("checksum computed by the DPU = 0x%08x\n", dpu_checksum);
       //  printf("actual checksum value        = 0x%08x\n", theoretical_checksum);
         if (dpu_status) {
-        //    printf("[" ANSI_COLOR_GREEN "OK" ANSI_COLOR_RESET "] checksums are equal\n");
+        //    printf("[" ANSI_COLOR_GREEN "OK" ANSI_COLOR_RESET "] checksums are equal.\n");
         } else {
-            printf("[" ANSI_COLOR_RED "ERROR" ANSI_COLOR_RESET "] checksums differ!\n");
+            printf("[" ANSI_COLOR_RED "ERROR" ANSI_COLOR_RESET "] checksums differ! real: 0x%x, expect: 0x%x\n", dpu_checksum, theoretical_checksum);
         }
     }
 
